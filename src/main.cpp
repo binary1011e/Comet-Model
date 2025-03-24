@@ -41,6 +41,7 @@ class Particle
     sf::Vector2<long double> acc;
     sf::CircleShape s;
     long double scale;
+    int count = 0;
     const long double G{6.6743}; //upsized by 10^20
  
 public:
@@ -77,7 +78,7 @@ public:
     }
     
     void update_physics(GravitySource& s, sf::Color color) {
-        constexpr int time_step = 1000;
+        constexpr int time_step = 5000;
         for (int i = 0; i < 500; i++) {
             vel = sf::Vector2<long double>{vel.x + acc.x * time_step, vel.y + acc.y * time_step};
             pos = sf::Vector2<long double>{pos.x + vel.x * time_step, pos.y +  vel.y * time_step};
@@ -95,7 +96,36 @@ public:
 
             acc = {-acceleration_x, -acceleration_y};
         }
-        set_color(color);
+        if (this->count == 25) {
+            set_color(color);
+            this->count = 0;
+        }
+        this->count++;
+    }
+    void update_physics_1(GravitySource& s, sf::Color color) {
+        constexpr int time_step = 5000;
+        for (int i = 0; i < 500; i++) {
+            pos = sf::Vector2<long double>{pos.x + vel.x * time_step, pos.y +  vel.y * time_step};
+            vel = sf::Vector2<long double>{vel.x + acc.x * time_step, vel.y + acc.y * time_step};
+            sf::Vector2<long double> rel_pos{pos.x - s.get_pos().x, pos.y- s.get_pos().y};
+            //Switch position and velocity to get regular euler
+            
+            // formula is G*sunMass/|distance between sun and comet|^3 * x or y (rcos(theta) or rsin(theta));
+            long double acceleration_x =
+            G * s.get_strength()/pow(magnitude(rel_pos), 3);
+            acceleration_x *= rel_pos.x;
+            
+            long double acceleration_y =
+            G * s.get_strength()/pow(magnitude(rel_pos), 3);
+            acceleration_y *= rel_pos.y;
+
+            acc = {-acceleration_x, -acceleration_y};
+        }
+        if (this->count == 25) {
+            set_color(color);
+            this->count = 0;
+        }
+        this->count++;
     }
     private:
 
@@ -144,6 +174,8 @@ int main() {
  
     Particle particle(800 + static_cast<long double>(226.6192)*pow(10,6), 300, 5.2893, 29.6647);
     particle.initialize_acceleration(source);
+    Particle particle2(800 + static_cast<long double>(226.6192)*pow(10,6), 300, 5.2893, 29.6647);
+    particle2.initialize_acceleration(source);
  
     while (window.isOpen())
     {
@@ -158,15 +190,17 @@ int main() {
                 if (keyPressed->scancode == sf::Keyboard::Scancode::Escape)
                     window.close();
             }
-            window.clear();
-            particle.update_physics(source, map_val_to_color(randomFloat()));
-            
-            source.render(window);
-            particle.render(window, source);
-            //draw calls
-            window.display();
-            
         }
+        window.clear();
+        particle.update_physics(source, map_val_to_color(randomFloat()));
+        
+        source.render(window);
+        particle.render(window, source);
+        particle2.update_physics_1(source, map_val_to_color(randomFloat()));
+        particle2.render(window, source);
+        //draw calls
+        window.display();
+            
 
     }
  
